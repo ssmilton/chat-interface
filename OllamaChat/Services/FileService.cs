@@ -10,6 +10,7 @@ namespace OllamaChat.Services;
 public class FileService
 {
     private readonly ChatDbContext _context;
+    private readonly IDocumentProcessingService _documentProcessingService;
     private readonly string _uploadsPath;
     private readonly string _artifactsPath;
 
@@ -52,9 +53,10 @@ public class FileService
         { ".7z", "application/x-7z-compressed" }
     };
 
-    public FileService(ChatDbContext context)
+    public FileService(ChatDbContext context, IDocumentProcessingService documentProcessingService)
     {
         _context = context;
+        _documentProcessingService = documentProcessingService;
 
         var appDataPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -75,6 +77,7 @@ public class FileService
         var fileName = Path.GetFileName(sourcePath);
         var extension = Path.GetExtension(sourcePath);
         var isImage = ImageExtensions.Contains(extension);
+        var isDocument = _documentProcessingService.CanProcess(sourcePath);
         var contentType = GetContentType(extension);
 
         // Create unique file name
@@ -102,9 +105,16 @@ public class FileService
             ContentType = contentType,
             FileSize = fileInfo.Length,
             IsImage = isImage,
+            IsDocument = isDocument,
             Base64Content = base64Content,
             UploadedAt = DateTime.UtcNow
         };
+
+        // Process document if applicable
+        if (isDocument)
+        {
+            await ProcessDocumentAsync(attachment, destPath);
+        }
 
         _context.FileAttachments.Add(attachment);
         await _context.SaveChangesAsync();
@@ -119,6 +129,7 @@ public class FileService
     {
         var extension = Path.GetExtension(fileName);
         var isImage = ImageExtensions.Contains(extension);
+        var isDocument = _documentProcessingService.CanProcess(fileName);
         var contentType = GetContentType(extension);
 
         // Create unique file name
@@ -142,9 +153,16 @@ public class FileService
             ContentType = contentType,
             FileSize = content.Length,
             IsImage = isImage,
+            IsDocument = isDocument,
             Base64Content = base64Content,
             UploadedAt = DateTime.UtcNow
         };
+
+        // Process document if applicable
+        if (isDocument)
+        {
+            await ProcessDocumentFromBytesAsync(attachment, content, fileName);
+        }
 
         _context.FileAttachments.Add(attachment);
         await _context.SaveChangesAsync();
@@ -256,5 +274,69 @@ public class FileService
         var invalid = Path.GetInvalidFileNameChars();
         var sanitized = string.Join("_", fileName.Split(invalid, StringSplitOptions.RemoveEmptyEntries));
         return sanitized.Length > 100 ? sanitized[..100] : sanitized;
+    }
+
+    /// <summary>
+    /// Process a document file and extract text
+    /// </summary>
+    private async Task ProcessDocumentAsync(FileAttachment attachment, string filePath)
+    {
+        try
+        {
+            var result = await _documentProcessingService.ExtractTextAsync(filePath);
+            ApplyProcessingResult(attachment, result);
+        }
+        catch (Exception ex)
+        {
+            attachment.ExtractionSuccessful = false;
+            attachment.ExtractionError = $"Processing failed: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Process a document from byte array and extract text
+    /// </summary>
+    private async Task ProcessDocumentFromBytesAsync(FileAttachment attachment, byte[] content, string fileName)
+    {
+        try
+        {
+            var result = await _documentProcessingService.ExtractTextAsync(content, fileName);
+            ApplyProcessingResult(attachment, result);
+        }
+        catch (Exception ex)
+        {
+            attachment.ExtractionSuccessful = false;
+            attachment.ExtractionError = $"Processing failed: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Apply document processing result to attachment
+    /// </summary>
+    private static void ApplyProcessingResult(FileAttachment attachment, DocumentProcessingResult result)
+    {
+        attachment.ExtractionSuccessful = result.IsSuccess;
+        attachment.DocumentType = result.DocumentType.ToString();
+
+        if (result.IsSuccess)
+        {
+            attachment.ExtractedText = result.ExtractedText;
+            attachment.PageCount = result.PageCount;
+            attachment.SheetCount = result.SheetCount;
+            attachment.WordCount = result.WordCount;
+            attachment.CharacterCount = result.CharacterCount;
+        }
+        else
+        {
+            attachment.ExtractionError = result.ErrorMessage;
+        }
+    }
+
+    /// <summary>
+    /// Get supported document extensions for file dialog filters
+    /// </summary>
+    public IReadOnlyCollection<string> GetSupportedDocumentExtensions()
+    {
+        return _documentProcessingService.GetSupportedExtensions();
     }
 }

@@ -75,6 +75,7 @@ public partial class App : Application
         services.AddSingleton<ISearchService>(sp =>
             new WebSearchService(sp.GetRequiredService<WebSearchConfig>()));
         services.AddScoped<IChatService, ChatService>();
+        services.AddSingleton<IDocumentProcessingService, DocumentProcessingService>();
         services.AddScoped<FileService>();
         services.AddSingleton<UserPreferencesService>();
 

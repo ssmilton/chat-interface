@@ -36,4 +36,52 @@ public class FileAttachment
 
     // Base64 content for small files or images
     public string? Base64Content { get; set; }
+
+    // Document processing fields
+    /// <summary>
+    /// Whether this file is a processable document (PDF, Office, text, etc.)
+    /// </summary>
+    public bool IsDocument { get; set; }
+
+    /// <summary>
+    /// The extracted text content from the document
+    /// </summary>
+    public string? ExtractedText { get; set; }
+
+    /// <summary>
+    /// Whether text extraction was successful
+    /// </summary>
+    public bool ExtractionSuccessful { get; set; }
+
+    /// <summary>
+    /// Error message if extraction failed
+    /// </summary>
+    [MaxLength(500)]
+    public string? ExtractionError { get; set; }
+
+    /// <summary>
+    /// The type of document (PDF, DOCX, TXT, etc.)
+    /// </summary>
+    [MaxLength(50)]
+    public string? DocumentType { get; set; }
+
+    /// <summary>
+    /// Number of pages (for paginated documents like PDF)
+    /// </summary>
+    public int? PageCount { get; set; }
+
+    /// <summary>
+    /// Number of sheets (for spreadsheets)
+    /// </summary>
+    public int? SheetCount { get; set; }
+
+    /// <summary>
+    /// Word count of extracted text
+    /// </summary>
+    public int? WordCount { get; set; }
+
+    /// <summary>
+    /// Character count of extracted text
+    /// </summary>
+    public int? CharacterCount { get; set; }
 }
