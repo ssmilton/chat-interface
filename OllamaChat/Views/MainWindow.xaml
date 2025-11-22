@@ -443,7 +443,9 @@
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="*"/>
+                                        <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
 
@@ -452,18 +454,97 @@
                                                Text="{Binding Role}"
                                                Foreground="{StaticResource SecondaryTextBrush}"
                                                FontSize="12"
-                                               FontWeight="SemiBold"                                        
+                                               FontWeight="SemiBold"
                                                Margin="0,0,0,8"/>
 
+                                    <!-- Thinking Section (Collapsible) -->
+                                    <Border Grid.Row="1"
+                                            Visibility="{Binding HasThinkingContent, Converter={StaticResource BoolToVisibility}}"
+                                            Margin="0,0,0,8">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+
+                                            <!-- Thinking Toggle Button -->
+                                            <Button Grid.Row="0"
+                                                    Command="{Binding ToggleThinkingCommand}"
+                                                    HorizontalAlignment="Left"
+                                                    Background="Transparent"
+                                                    BorderThickness="0"
+                                                    Cursor="Hand"
+                                                    Padding="0">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Foreground="{StaticResource ThinkingBorderBrush}"
+                                                               FontSize="12"
+                                                               FontWeight="SemiBold">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Text" Value="+ Show Thinking"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsShowingThinking}" Value="True">
+                                                                        <Setter Property="Text" Value="- Hide Thinking"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </Button>
+
+                                            <!-- Thinking Content -->
+                                            <Border Grid.Row="1"
+                                                    Background="{StaticResource ThinkingBackgroundBrush}"
+                                                    BorderBrush="{StaticResource ThinkingBorderBrush}"
+                                                    BorderThickness="0,0,0,2"
+                                                    CornerRadius="4"
+                                                    Padding="12"
+                                                    Margin="0,8,0,0"
+                                                    Visibility="{Binding IsShowingThinking, Converter={StaticResource BoolToVisibility}}">
+                                                <TextBlock Text="{Binding ThinkingContent}"
+                                                           Foreground="{StaticResource ThinkingTextBrush}"
+                                                           FontStyle="Italic"
+                                                           TextWrapping="Wrap"
+                                                           LineHeight="20"
+                                                           FontSize="13"/>
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+
+                                    <!-- Currently Thinking Indicator -->
+                                    <Border Grid.Row="1"
+                                            Background="{StaticResource ThinkingBackgroundBrush}"
+                                            BorderBrush="{StaticResource ThinkingBorderBrush}"
+                                            BorderThickness="0,0,0,2"
+                                            CornerRadius="4"
+                                            Padding="12"
+                                            Margin="0,0,0,8"
+                                            Visibility="{Binding IsCurrentlyThinking, Converter={StaticResource BoolToVisibility}}">
+                                        <StackPanel>
+                                            <TextBlock Text="Thinking..."
+                                                       Foreground="{StaticResource ThinkingBorderBrush}"
+                                                       FontWeight="SemiBold"
+                                                       FontSize="12"
+                                                       Margin="0,0,0,4"/>
+                                            <TextBlock Text="{Binding ThinkingContent}"
+                                                       Foreground="{StaticResource ThinkingTextBrush}"
+                                                       FontStyle="Italic"
+                                                       TextWrapping="Wrap"
+                                                       LineHeight="20"
+                                                       FontSize="13"/>
+                                        </StackPanel>
+                                    </Border>
+
                                     <!-- Message Content -->
-                                    <TextBlock Grid.Row="1"
+                                    <TextBlock Grid.Row="2"
                                                Text="{Binding Content}"
                                                Foreground="{StaticResource PrimaryTextBrush}"
                                                TextWrapping="Wrap"
                                                LineHeight="24"/>
 
                                     <!-- Attachments -->
-                                    <ItemsControl Grid.Row="2"
+                                    <ItemsControl Grid.Row="3"
                                                   ItemsSource="{Binding Attachments}"
                                                   Visibility="{Binding Attachments.Count, Converter={StaticResource BoolToVisibility}}"
                                                   Margin="0,8,0,0">
@@ -482,7 +563,7 @@
                                     </ItemsControl>
 
                                     <!-- Streaming Indicator -->
-                                    <TextBlock Grid.Row="2"
+                                    <TextBlock Grid.Row="4"
                                                Text="●●●"
                                                Foreground="{StaticResource AccentBrush}"
                                                Visibility="{Binding IsStreaming, Converter={StaticResource BoolToVisibility}}"

@@ -33,6 +33,11 @@
     <Color x:Key="WarningColor">#F5A623</Color>
     <Color x:Key="ErrorColor">#EF4444</Color>
 
+    <!-- Thinking Content Colors -->
+    <Color x:Key="ThinkingBackgroundColor">#2D2D3A</Color>
+    <Color x:Key="ThinkingTextColor">#A0A0C0</Color>
+    <Color x:Key="ThinkingBorderColor">#6B5B95</Color>
+
     <!-- Brushes -->
     <SolidColorBrush x:Key="PrimaryBackgroundBrush" Color="{StaticResource PrimaryBackgroundColor}"/>
     <SolidColorBrush x:Key="SecondaryBackgroundBrush" Color="{StaticResource SecondaryBackgroundColor}"/>
@@ -58,5 +63,9 @@
     <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}"/>
     <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}"/>
     <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource ErrorColor}"/>
+
+    <SolidColorBrush x:Key="ThinkingBackgroundBrush" Color="{StaticResource ThinkingBackgroundColor}"/>
+    <SolidColorBrush x:Key="ThinkingTextBrush" Color="{StaticResource ThinkingTextColor}"/>
+    <SolidColorBrush x:Key="ThinkingBorderBrush" Color="{StaticResource ThinkingBorderColor}"/>
 
 </ResourceDictionary>
