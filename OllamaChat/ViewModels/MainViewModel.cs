@@ -421,7 +421,16 @@ public partial class MainViewModel : ViewModelBase
         var dialog = new OpenFileDialog
         {
             Multiselect = true,
-            Filter = "All Files (*.*)|*.*|Images (*.png;*.jpg;*.jpeg;*.gif)|*.png;*.jpg;*.jpeg;*.gif|Documents (*.txt;*.md;*.pdf)|*.txt;*.md;*.pdf|Code Files (*.cs;*.js;*.py;*.ts)|*.cs;*.js;*.py;*.ts"
+            Filter = "All Files (*.*)|*.*|" +
+                     "Documents (*.pdf;*.docx;*.doc;*.xlsx;*.xls;*.pptx;*.ppt;*.txt;*.md;*.rtf)|*.pdf;*.docx;*.doc;*.xlsx;*.xls;*.pptx;*.ppt;*.txt;*.md;*.rtf|" +
+                     "PDF Files (*.pdf)|*.pdf|" +
+                     "Word Documents (*.docx;*.doc)|*.docx;*.doc|" +
+                     "Excel Spreadsheets (*.xlsx;*.xls)|*.xlsx;*.xls|" +
+                     "PowerPoint (*.pptx;*.ppt)|*.pptx;*.ppt|" +
+                     "Text Files (*.txt;*.md;*.rtf)|*.txt;*.md;*.rtf|" +
+                     "Images (*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.webp)|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.webp|" +
+                     "Code Files (*.cs;*.js;*.ts;*.py;*.java;*.cpp;*.c;*.go;*.rs;*.rb;*.php)|*.cs;*.js;*.ts;*.py;*.java;*.cpp;*.c;*.go;*.rs;*.rb;*.php|" +
+                     "Data Files (*.json;*.xml;*.csv;*.yaml;*.yml)|*.json;*.xml;*.csv;*.yaml;*.yml"
         };
 
         if (dialog.ShowDialog() == true)
@@ -743,10 +752,51 @@ public partial class MainViewModel : ViewModelBase
         // Add conversation history
         foreach (var msg in Messages.Where(m => !m.IsStreaming))
         {
+            var messageContent = msg.Content;
+
+            // Append document content for user messages with document attachments
+            if (msg.Role == "user")
+            {
+                var documentAttachments = msg.Attachments
+                    .Where(a => a.IsDocument && a.ExtractionSuccessful && !string.IsNullOrEmpty(a.ExtractedText))
+                    .ToList();
+
+                if (documentAttachments.Any())
+                {
+                    var documentContext = new System.Text.StringBuilder();
+                    documentContext.AppendLine("\n\n[Attached Documents:]");
+
+                    foreach (var doc in documentAttachments)
+                    {
+                        documentContext.AppendLine($"\n--- Document: {doc.FileName} ({doc.DocumentType}) ---");
+                        if (doc.PageCount.HasValue)
+                            documentContext.AppendLine($"Pages: {doc.PageCount}");
+                        if (doc.SheetCount.HasValue)
+                            documentContext.AppendLine($"Sheets: {doc.SheetCount}");
+                        if (doc.WordCount.HasValue)
+                            documentContext.AppendLine($"Words: {doc.WordCount}");
+                        documentContext.AppendLine();
+
+                        // Limit extracted text to prevent token overflow (configurable limit)
+                        var extractedText = doc.ExtractedText!;
+                        const int maxDocumentChars = 50000; // ~12,500 tokens
+                        if (extractedText.Length > maxDocumentChars)
+                        {
+                            extractedText = extractedText.Substring(0, maxDocumentChars) +
+                                "\n\n[Document truncated due to size...]";
+                        }
+                        documentContext.AppendLine(extractedText);
+                        documentContext.AppendLine("--- End of Document ---");
+                    }
+
+                    messageContent += documentContext.ToString();
+                }
+            }
+
             var ollamaMsg = new OllamaChatMessage
             {
                 Role = msg.Role,
-                Content = msg.Content
+                Content = messageContent
             };
 
             // Add images for vision models

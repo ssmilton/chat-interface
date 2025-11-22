@@ -69,6 +69,7 @@ public partial class App : Application
         services.AddSingleton<IOllamaService>(sp =>
             new OllamaService(sp.GetRequiredService<OllamaConfig>()));
         services.AddScoped<IChatService, ChatService>();
+        services.AddSingleton<IDocumentProcessingService, DocumentProcessingService>();
         services.AddScoped<FileService>();
         services.AddSingleton<UserPreferencesService>();
 
