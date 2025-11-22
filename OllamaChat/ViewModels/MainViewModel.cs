@@ -238,16 +238,103 @@ public partial class MainViewModel : ViewModelBase
 
             if (config.StreamResponses)
             {
+                var streamBuffer = new System.Text.StringBuilder();
+                var isInThinkBlock = false;
+
                 await foreach (var response in _ollamaService.ChatStreamAsync(request, _streamCancellation.Token))
                 {
                     if (response.Message?.Content != null)
                     {
                         fullResponse.Append(response.Message.Content);
-                        assistantMessageVm.AppendContent(response.Message.Content);
+                        streamBuffer.Append(response.Message.Content);
+
+                        // Process buffered content for think tags
+                        var bufferContent = streamBuffer.ToString();
+
+                        while (bufferContent.Length > 0)
+                        {
+                            if (isInThinkBlock)
+                            {
+                                // Look for closing </think> tag
+                                var closeIndex = bufferContent.IndexOf("</think>", StringComparison.OrdinalIgnoreCase);
+                                if (closeIndex >= 0)
+                                {
+                                    // Output thinking content up to closing tag
+                                    var thinkText = bufferContent.Substring(0, closeIndex);
+                                    if (thinkText.Length > 0)
+                                    {
+                                        assistantMessageVm.AppendThinkingContent(thinkText);
+                                    }
+                                    bufferContent = bufferContent.Substring(closeIndex + "</think>".Length);
+                                    isInThinkBlock = false;
+                                    assistantMessageVm.IsCurrentlyThinking = false;
+                                }
+                                else if (bufferContent.Length > "</think>".Length)
+                                {
+                                    // Safe to output part of the buffer (keep enough for potential partial tag)
+                                    var safeLength = bufferContent.Length - "</think>".Length;
+                                    assistantMessageVm.AppendThinkingContent(bufferContent.Substring(0, safeLength));
+                                    bufferContent = bufferContent.Substring(safeLength);
+                                    break;
+                                }
+                                else
+                                {
+                                    // Buffer too small, wait for more data
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                // Look for opening <think> tag
+                                var openIndex = bufferContent.IndexOf("<think>", StringComparison.OrdinalIgnoreCase);
+                                if (openIndex >= 0)
+                                {
+                                    // Output regular content up to the tag
+                                    var regularText = bufferContent.Substring(0, openIndex);
+                                    if (regularText.Length > 0)
+                                    {
+                                        assistantMessageVm.AppendContent(regularText);
+                                    }
+                                    bufferContent = bufferContent.Substring(openIndex + "<think>".Length);
+                                    isInThinkBlock = true;
+                                    assistantMessageVm.IsCurrentlyThinking = true;
+                                }
+                                else if (bufferContent.Length > "<think>".Length)
+                                {
+                                    // Safe to output part of the buffer
+                                    var safeLength = bufferContent.Length - "<think>".Length;
+                                    assistantMessageVm.AppendContent(bufferContent.Substring(0, safeLength));
+                                    bufferContent = bufferContent.Substring(safeLength);
+                                    break;
+                                }
+                                else
+                                {
+                                    // Buffer too small, wait for more data
+                                    break;
+                                }
+                            }
+                        }
+
+                        streamBuffer.Clear();
+                        streamBuffer.Append(bufferContent);
                     }
 
                     if (response.Done)
                     {
+                        // Flush remaining buffer
+                        var remaining = streamBuffer.ToString();
+                        if (remaining.Length > 0)
+                        {
+                            if (isInThinkBlock)
+                            {
+                                assistantMessageVm.AppendThinkingContent(remaining);
+                            }
+                            else
+                            {
+                                assistantMessageVm.AppendContent(remaining);
+                            }
+                        }
+                        assistantMessageVm.IsCurrentlyThinking = false;
                         break;
                     }
                 }
@@ -258,7 +345,8 @@ public partial class MainViewModel : ViewModelBase
                 if (response.Message?.Content != null)
                 {
                     fullResponse.Append(response.Message.Content);
-                    assistantMessageVm.Content = response.Message.Content;
+                    // Parse think tags for non-streaming response
+                    ParseAndSetContent(assistantMessageVm, response.Message.Content);
                 }
             }
 
@@ -740,5 +828,31 @@ public partial class MainViewModel : ViewModelBase
             "html" => "HTML Files (*.html)|*.html|All Files (*.*)|*.*",
             _ => "Text Files (*.txt)|*.txt|All Files (*.*)|*.*"
         };
+    }
+
+    private static void ParseAndSetContent(ChatMessageViewModel messageVm, string content)
+    {
+        var thinkPattern = @"<think>([\s\S]*?)</think>";
+        var matches = System.Text.RegularExpressions.Regex.Matches(content, thinkPattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        if (matches.Count > 0)
+        {
+            // Extract all thinking content
+            var thinkingBuilder = new System.Text.StringBuilder();
+            foreach (System.Text.RegularExpressions.Match match in matches)
+            {
+                thinkingBuilder.Append(match.Groups[1].Value);
+            }
+            messageVm.ThinkingContent = thinkingBuilder.ToString();
+            messageVm.HasThinkingContent = true;
+
+            // Remove think tags from visible content
+            var visibleContent = System.Text.RegularExpressions.Regex.Replace(content, thinkPattern, "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            messageVm.Content = visibleContent.Trim();
+        }
+        else
+        {
+            messageVm.Content = content;
+        }
     }
 }
