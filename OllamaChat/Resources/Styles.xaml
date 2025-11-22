@@ -246,4 +246,138 @@
         <Setter Property="Padding" Value="8,4"/>
     </Style>
 
+    <!-- ========================================= -->
+    <!-- Markdown Rendering Styles (Markdig.Wpf) -->
+    <!-- ========================================= -->
+
+    <!-- Markdown Document Style -->
+    <Style x:Key="MarkdownDocumentStyle" TargetType="FlowDocument">
+        <Setter Property="FontFamily" Value="{StaticResource PrimaryFont}"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}"/>
+        <Setter Property="PagePadding" Value="0"/>
+    </Style>
+
+    <!-- Markdown Heading Styles -->
+    <Style x:Key="Heading1Style" TargetType="Paragraph">
+        <Setter Property="FontSize" Value="24"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}"/>
+        <Setter Property="Margin" Value="0,16,0,8"/>
+    </Style>
+
+    <Style x:Key="Heading2Style" TargetType="Paragraph">
+        <Setter Property="FontSize" Value="20"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}"/>
+        <Setter Property="Margin" Value="0,12,0,6"/>
+    </Style>
+
+    <Style x:Key="Heading3Style" TargetType="Paragraph">
+        <Setter Property="FontSize" Value="18"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}"/>
+        <Setter Property="Margin" Value="0,10,0,4"/>
+    </Style>
+
+    <Style x:Key="Heading4Style" TargetType="Paragraph">
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}"/>
+        <Setter Property="Margin" Value="0,8,0,4"/>
+    </Style>
+
+    <!-- Markdown Code Block Style -->
+    <Style x:Key="CodeBlockContainerStyle" TargetType="Section">
+        <Setter Property="Background" Value="#1A1A1A"/>
+        <Setter Property="Padding" Value="12"/>
+        <Setter Property="Margin" Value="0,8"/>
+    </Style>
+
+    <Style x:Key="CodeBlockParagraphStyle" TargetType="Paragraph">
+        <Setter Property="FontFamily" Value="{StaticResource MonospaceFont}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}"/>
+        <Setter Property="Background" Value="#1A1A1A"/>
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+    </Style>
+
+    <!-- Markdown Inline Code Style -->
+    <Style x:Key="InlineCodeStyle" TargetType="Run">
+        <Setter Property="FontFamily" Value="{StaticResource MonospaceFont}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Foreground" Value="#E06C75"/>
+        <Setter Property="Background" Value="#2D2D2D"/>
+    </Style>
+
+    <!-- Markdown Blockquote Style -->
+    <Style x:Key="BlockquoteStyle" TargetType="Section">
+        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+        <Setter Property="BorderThickness" Value="4,0,0,0"/>
+        <Setter Property="Padding" Value="12,4"/>
+        <Setter Property="Margin" Value="0,8"/>
+        <Setter Property="Background" Value="#2D2D2D"/>
+    </Style>
+
+    <!-- Markdown Horizontal Rule Style -->
+    <Style x:Key="HorizontalRuleStyle" TargetType="Line">
+        <Setter Property="Stroke" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="StrokeThickness" Value="1"/>
+        <Setter Property="Stretch" Value="Fill"/>
+    </Style>
+
+    <!-- Markdown List Styles -->
+    <Style x:Key="UnorderedListStyle" TargetType="List">
+        <Setter Property="MarkerStyle" Value="Disc"/>
+        <Setter Property="Margin" Value="16,8,0,8"/>
+        <Setter Property="Padding" Value="0"/>
+    </Style>
+
+    <Style x:Key="OrderedListStyle" TargetType="List">
+        <Setter Property="MarkerStyle" Value="Decimal"/>
+        <Setter Property="Margin" Value="16,8,0,8"/>
+        <Setter Property="Padding" Value="0"/>
+    </Style>
+
+    <!-- Markdown Link Style -->
+    <Style x:Key="MarkdownLinkStyle" TargetType="Hyperlink">
+        <Setter Property="Foreground" Value="{StaticResource LinkTextBrush}"/>
+        <Setter Property="TextDecorations" Value="None"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="TextDecorations" Value="Underline"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Markdown Table Styles -->
+    <Style x:Key="TableStyle" TargetType="Table">
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CellSpacing" Value="0"/>
+    </Style>
+
+    <Style x:Key="TableCellStyle" TargetType="TableCell">
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="0,0,1,1"/>
+        <Setter Property="Padding" Value="8,4"/>
+    </Style>
+
+    <Style x:Key="TableHeaderCellStyle" TargetType="TableCell">
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="0,0,1,1"/>
+        <Setter Property="Padding" Value="8,4"/>
+        <Setter Property="Background" Value="#2D2D2D"/>
+    </Style>
+
+    <!-- Markdown Emphasis Styles -->
+    <Style x:Key="EmphasisStyle" TargetType="Italic">
+        <Setter Property="FontStyle" Value="Italic"/>
+    </Style>
+
+    <Style x:Key="StrongEmphasisStyle" TargetType="Bold">
+        <Setter Property="FontWeight" Value="Bold"/>
+    </Style>
+
 </ResourceDictionary>
