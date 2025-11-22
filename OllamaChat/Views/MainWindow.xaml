@@ -393,6 +393,19 @@
                                   SelectedValuePath="Name"
                                   Width="200"/>
 
+                        <!-- Web Search Toggle -->
+                        <Border Margin="16,0,0,0">
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox IsChecked="{Binding UseWebSearch}"
+                                          VerticalAlignment="Center"/>
+                                <TextBlock Text="🔍 Web Search"
+                                           Foreground="{StaticResource SecondaryTextBrush}"
+                                           VerticalAlignment="Center"
+                                           Margin="4,0,0,0"
+                                           ToolTip="Search the web for relevant information before responding"/>
+                            </StackPanel>
+                        </Border>
+
                         <!-- Project Context Sharing Toggle -->
                         <Border Margin="16,0,0,0"
                                 Visibility="{Binding CurrentChatHasProject, Converter={StaticResource BoolToVisibility}}">
@@ -623,10 +636,29 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
+                    <!-- Search Status -->
+                    <Border Grid.Row="0"
+                            Background="{StaticResource HoverBackgroundBrush}"
+                            CornerRadius="4"
+                            Padding="8,4"
+                            Margin="0,0,0,8"
+                            Visibility="{Binding IsSearching, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🔍"
+                                       Foreground="{StaticResource AccentBrush}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                            <TextBlock Text="{Binding SearchStatus}"
+                                       Foreground="{StaticResource SecondaryTextBrush}"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
                     <!-- Pending Attachments -->
-                    <ItemsControl Grid.Row="0"
+                    <ItemsControl Grid.Row="1"
                                   ItemsSource="{Binding PendingAttachments}"
                                   Visibility="{Binding PendingAttachments.Count, Converter={StaticResource BoolToVisibility}}"
                                   Margin="0,0,0,8">
@@ -660,7 +692,7 @@
                     </ItemsControl>
 
                     <!-- Input Box -->
-                    <Grid Grid.Row="1">
+                    <Grid Grid.Row="2">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>

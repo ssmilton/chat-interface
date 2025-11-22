@@ -54,6 +54,10 @@ public partial class App : Application
         Configuration.GetSection("Ollama").Bind(ollamaConfig);
         services.AddSingleton(ollamaConfig);
 
+        var webSearchConfig = new WebSearchConfig();
+        Configuration.GetSection("WebSearch").Bind(webSearchConfig);
+        services.AddSingleton(webSearchConfig);
+
         // Database
         services.AddDbContext<ChatDbContext>(options =>
         {
@@ -68,6 +72,8 @@ public partial class App : Application
         // Services
         services.AddSingleton<IOllamaService>(sp =>
             new OllamaService(sp.GetRequiredService<OllamaConfig>()));
+        services.AddSingleton<ISearchService>(sp =>
+            new WebSearchService(sp.GetRequiredService<WebSearchConfig>()));
         services.AddScoped<IChatService, ChatService>();
         services.AddScoped<FileService>();
         services.AddSingleton<UserPreferencesService>();

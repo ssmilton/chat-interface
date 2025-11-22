@@ -14,6 +14,7 @@ public partial class MainViewModel : ViewModelBase
 {
     private readonly IChatService _chatService;
     private readonly IOllamaService _ollamaService;
+    private readonly ISearchService _searchService;
     private readonly FileService _fileService;
     private readonly UserPreferencesService _userPreferencesService;
     private CancellationTokenSource? _streamCancellation;
@@ -76,6 +77,15 @@ public partial class MainViewModel : ViewModelBase
     private bool _useProjectContext;
 
     [ObservableProperty]
+    private bool _useWebSearch;
+
+    [ObservableProperty]
+    private bool _isSearching;
+
+    [ObservableProperty]
+    private string _searchStatus = string.Empty;
+
+    [ObservableProperty]
     private bool _isAssignProjectDialogVisible;
 
     [ObservableProperty]
@@ -83,10 +93,11 @@ public partial class MainViewModel : ViewModelBase
 
     public bool CurrentChatHasProject => CurrentChat?.ProjectId != null;
 
-    public MainViewModel(IChatService chatService, IOllamaService ollamaService, FileService fileService, UserPreferencesService userPreferencesService)
+    public MainViewModel(IChatService chatService, IOllamaService ollamaService, ISearchService searchService, FileService fileService, UserPreferencesService userPreferencesService)
     {
         _chatService = chatService;
         _ollamaService = ollamaService;
+        _searchService = searchService;
         _fileService = fileService;
         _userPreferencesService = userPreferencesService;
 
@@ -96,6 +107,9 @@ public partial class MainViewModel : ViewModelBase
         {
             _selectedModel = lastUsedModel;
         }
+
+        // Enable web search by default if configured
+        _useWebSearch = _searchService.GetConfig().Enabled;
     }
 
     partial void OnCurrentChatChanged(Chat? value)
@@ -212,6 +226,7 @@ public partial class MainViewModel : ViewModelBase
 
         IsSending = true;
         ClearError();
+        SearchStatus = string.Empty;
         _streamCancellation = new CancellationTokenSource();
 
         try
@@ -232,6 +247,50 @@ public partial class MainViewModel : ViewModelBase
 
             Messages.Add(userMessageVm);
 
+            // Save user input before any operations
+            var userInput = MessageInput;
+            MessageInput = string.Empty;
+
+            // Perform web search if enabled
+            string? searchContext = null;
+            if (UseWebSearch)
+            {
+                try
+                {
+                    IsSearching = true;
+                    SearchStatus = "Searching the web...";
+
+                    var searchResponse = await _searchService.SearchAsync(userInput, cancellationToken: _streamCancellation.Token);
+
+                    if (searchResponse.Success && searchResponse.Results.Count > 0)
+                    {
+                        searchContext = searchResponse.ToContextString();
+                        SearchStatus = $"Found {searchResponse.Results.Count} results";
+                    }
+                    else if (!string.IsNullOrEmpty(searchResponse.ErrorMessage))
+                    {
+                        SearchStatus = $"Search: {searchResponse.ErrorMessage}";
+                    }
+                    else
+                    {
+                        SearchStatus = "No search results found";
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    SearchStatus = "Search cancelled";
+                }
+                catch (Exception ex)
+                {
+                    SearchStatus = $"Search error: {ex.Message}";
+                    System.Diagnostics.Debug.WriteLine($"Web search error: {ex}");
+                }
+                finally
+                {
+                    IsSearching = false;
+                }
+            }
+
             // Prepare assistant message placeholder
             var assistantMessageVm = new ChatMessageViewModel
             {
@@ -242,10 +301,8 @@ public partial class MainViewModel : ViewModelBase
             };
             Messages.Add(assistantMessageVm);
 
-            // Build request
-            var request = await BuildChatRequestAsync();
-            var userInput = MessageInput;
-            MessageInput = string.Empty;
+            // Build request with search context
+            var request = await BuildChatRequestAsync(searchContext);
 
             // Stream response
             var fullResponse = new System.Text.StringBuilder();
@@ -712,7 +769,7 @@ public partial class MainViewModel : ViewModelBase
         }
     }
 
-    private async Task<OllamaChatRequest> BuildChatRequestAsync()
+    private async Task<OllamaChatRequest> BuildChatRequestAsync(string? searchContext = null)
     {
         var messages = new List<OllamaChatMessage>();
 
@@ -738,6 +795,16 @@ public partial class MainViewModel : ViewModelBase
                     Content = $"[Project Context - Previous conversations in this project:]\n{projectContext}"
                 });
             }
+        }
+
+        // Add web search context if available
+        if (!string.IsNullOrEmpty(searchContext))
+        {
+            messages.Add(new OllamaChatMessage
+            {
+                Role = "system",
+                Content = $"Use the following web search results to help answer the user's question. Cite sources when using information from search results.\n\n{searchContext}"
+            });
         }
 
         // Add conversation history
