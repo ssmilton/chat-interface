@@ -1,5 +1,6 @@
 using OllamaChat.Data;
 using OllamaChat.Models;
+using System.IO;
 
 namespace OllamaChat.Services;
 

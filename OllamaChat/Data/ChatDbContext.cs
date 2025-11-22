@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using OllamaChat.Models;
+using System.IO;
 
 namespace OllamaChat.Data;
 

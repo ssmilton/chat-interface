@@ -10,7 +10,7 @@ namespace OllamaChat.Views;
 /// </summary>
 public partial class MainWindow : Window
 {
-    private readonly MainViewModel _viewModel;
+    private readonly MainViewModel? _viewModel;
 
     public MainWindow()
     {
