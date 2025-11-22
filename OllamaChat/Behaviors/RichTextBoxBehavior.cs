@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
+using System.Windows.Input;
 
 namespace OllamaChat.Behaviors;
 
@@ -30,6 +32,10 @@ public static class RichTextBoxBehavior
     {
         if (d is RichTextBox richTextBox)
         {
+            // Ensure we only attach the handler once
+            richTextBox.PreviewMouseLeftButtonDown -= RichTextBox_PreviewMouseLeftButtonDown;
+            richTextBox.PreviewMouseLeftButtonDown += RichTextBox_PreviewMouseLeftButtonDown;
+
             if (e.NewValue is FlowDocument newDocument)
             {
                 // We need to create a copy because FlowDocument can only belong to one RichTextBox
@@ -38,6 +44,79 @@ public static class RichTextBoxBehavior
             else
             {
                 richTextBox.Document = new FlowDocument();
+            }
+        }
+    }
+
+    private static void RichTextBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is RichTextBox richTextBox)
+        {
+            // Get the position where the user clicked
+            var position = e.GetPosition(richTextBox);
+            var textPointer = richTextBox.GetPositionFromPoint(position, true);
+
+            if (textPointer != null)
+            {
+                // Walk up the parent chain to find a Hyperlink
+                var parent = textPointer.Parent;
+                while (parent != null)
+                {
+                    if (parent is Hyperlink hyperlink)
+                    {
+                        string? url = null;
+
+                        // First try NavigateUri
+                        if (hyperlink.NavigateUri != null)
+                        {
+                            url = hyperlink.NavigateUri.AbsoluteUri;
+                        }
+
+                        // If NavigateUri is null, try to get URL from the hyperlink's text content
+                        if (string.IsNullOrEmpty(url))
+                        {
+                            var textRange = new TextRange(hyperlink.ContentStart, hyperlink.ContentEnd);
+                            var text = textRange.Text?.Trim();
+                            if (!string.IsNullOrEmpty(text) && (text.StartsWith("http://") || text.StartsWith("https://")))
+                            {
+                                url = text;
+                            }
+                        }
+
+                        if (!string.IsNullOrEmpty(url))
+                        {
+                            try
+                            {
+                                Debug.WriteLine($"Opening URL: {url}");
+                                Process.Start(new ProcessStartInfo
+                                {
+                                    FileName = url,
+                                    UseShellExecute = true
+                                });
+                                e.Handled = true;
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.WriteLine($"Failed to open URL: {ex.Message}");
+                            }
+                        }
+                        return;
+                    }
+
+                    // Move up the tree
+                    if (parent is FrameworkContentElement fce)
+                    {
+                        parent = fce.Parent;
+                    }
+                    else if (parent is FrameworkElement fe)
+                    {
+                        parent = fe.Parent;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
             }
         }
     }
