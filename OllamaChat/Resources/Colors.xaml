@@ -14,7 +14,7 @@
 
     <!-- Text Colors -->
     <Color x:Key="PrimaryTextColor">#ECECF1</Color>
-    <Color x:Key="SecondaryTextColor">#8E8EA0</Color>
+    <Color x:Key="SecondaryTextColor">#CC5500</Color>
     <Color x:Key="PlaceholderTextColor">#6B6B7B</Color>
     <Color x:Key="LinkTextColor">#7AB8FF</Color>
 
