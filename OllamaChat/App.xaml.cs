@@ -70,6 +70,7 @@ public partial class App : Application
             new OllamaService(sp.GetRequiredService<OllamaConfig>()));
         services.AddScoped<IChatService, ChatService>();
         services.AddScoped<FileService>();
+        services.AddSingleton<UserPreferencesService>();
 
         // ViewModels
         services.AddTransient<MainViewModel>();
