@@ -89,13 +89,6 @@ public partial class MainViewModel : ViewModelBase
         _ollamaService = ollamaService;
         _fileService = fileService;
         _userPreferencesService = userPreferencesService;
-
-        // Load last used model from preferences
-        var lastUsedModel = _userPreferencesService.LastUsedModel;
-        if (!string.IsNullOrEmpty(lastUsedModel))
-        {
-            _selectedModel = lastUsedModel;
-        }
     }
 
     partial void OnCurrentChatChanged(Chat? value)
@@ -111,6 +104,16 @@ public partial class MainViewModel : ViewModelBase
 
     public async Task InitializeAsync()
     {
+        // Initialize user preferences first (async file load)
+        await _userPreferencesService.InitializeAsync();
+
+        // Load last used model from preferences
+        var lastUsedModel = _userPreferencesService.LastUsedModel;
+        if (!string.IsNullOrEmpty(lastUsedModel))
+        {
+            SelectedModel = lastUsedModel;
+        }
+
         await LoadProjectsAsync();
         await LoadRecentChatsAsync();
         await CheckServerConnectionAsync();

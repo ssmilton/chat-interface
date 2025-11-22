@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using System.Threading.Tasks;
 using System.Windows;
 using OllamaChat.Models;
 
@@ -37,7 +38,7 @@ public partial class SettingsWindow : Window
         RepeatPenaltyTextBox.Text = _config.DefaultOptions.RepeatPenalty.ToString("F1");
     }
 
-    private void SaveButton_Click(object sender, RoutedEventArgs e)
+    private async void SaveButton_Click(object sender, RoutedEventArgs e)
     {
         try
         {
@@ -53,8 +54,8 @@ public partial class SettingsWindow : Window
             _config.DefaultOptions.NumCtx = int.TryParse(ContextLengthTextBox.Text, out var ctx) ? ctx : 4096;
             _config.DefaultOptions.RepeatPenalty = float.TryParse(RepeatPenaltyTextBox.Text, out var penalty) ? penalty : 1.1f;
 
-            // Save to file
-            SaveConfigToFile();
+            // Save to file asynchronously
+            await SaveConfigToFileAsync();
 
             DialogResult = true;
             Close();
@@ -71,7 +72,7 @@ public partial class SettingsWindow : Window
         Close();
     }
 
-    private void SaveConfigToFile()
+    private async Task SaveConfigToFileAsync()
     {
         var configObject = new
         {
@@ -103,6 +104,6 @@ public partial class SettingsWindow : Window
             WriteIndented = true
         });
 
-        File.WriteAllText(_configPath, json);
+        await File.WriteAllTextAsync(_configPath, json);
     }
 }
