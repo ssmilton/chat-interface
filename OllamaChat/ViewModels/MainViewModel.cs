@@ -15,6 +15,7 @@ public partial class MainViewModel : ViewModelBase
     private readonly IChatService _chatService;
     private readonly IOllamaService _ollamaService;
     private readonly FileService _fileService;
+    private readonly UserPreferencesService _userPreferencesService;
     private CancellationTokenSource? _streamCancellation;
 
     [ObservableProperty]
@@ -82,16 +83,30 @@ public partial class MainViewModel : ViewModelBase
 
     public bool CurrentChatHasProject => CurrentChat?.ProjectId != null;
 
-    public MainViewModel(IChatService chatService, IOllamaService ollamaService, FileService fileService)
+    public MainViewModel(IChatService chatService, IOllamaService ollamaService, FileService fileService, UserPreferencesService userPreferencesService)
     {
         _chatService = chatService;
         _ollamaService = ollamaService;
         _fileService = fileService;
+        _userPreferencesService = userPreferencesService;
+
+        // Load last used model from preferences
+        var lastUsedModel = _userPreferencesService.LastUsedModel;
+        if (!string.IsNullOrEmpty(lastUsedModel))
+        {
+            _selectedModel = lastUsedModel;
+        }
     }
 
     partial void OnCurrentChatChanged(Chat? value)
     {
         OnPropertyChanged(nameof(CurrentChatHasProject));
+    }
+
+    partial void OnSelectedModelChanged(string value)
+    {
+        // Persist the selected model for next session
+        _userPreferencesService.SetLastUsedModel(value);
     }
 
     public async Task InitializeAsync()
