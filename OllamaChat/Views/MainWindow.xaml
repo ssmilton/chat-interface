@@ -92,16 +92,87 @@
                           IsExpanded="True"
                           Style="{StaticResource ProjectExpander}"
                           Margin="4,8,4,0">
-                    <ItemsControl ItemsSource="{Binding Projects}" Margin="0,4">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Button Style="{StaticResource SidebarButton}"
-                                        Content="{Binding Name}"
-                                        Command="{Binding DataContext.SelectProjectCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                        CommandParameter="{Binding}"/>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- New Project Input -->
+                        <Grid Grid.Row="0" Margin="4,4,4,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="NewProjectNameTextBox"
+                                     Style="{StaticResource SearchTextBox}"
+                                     Text="{Binding NewProjectName, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="Enter project name">
+                                <TextBox.InputBindings>
+                                    <KeyBinding Key="Return" Command="{Binding CreateProjectFromInputCommand}"/>
+                                </TextBox.InputBindings>
+                            </TextBox>
+                            <TextBlock Text="New project..."
+                                       Foreground="{StaticResource PlaceholderTextBrush}"
+                                       IsHitTestVisible="False"
+                                       Margin="12,8"
+                                       Visibility="{Binding NewProjectName, Converter={StaticResource InverseBoolToVisibility}}"/>
+                            <Button Grid.Column="1"
+                                    Style="{StaticResource IconButton}"
+                                    Command="{Binding CreateProjectFromInputCommand}"
+                                    ToolTip="Create Project"
+                                    Margin="4,0,0,0">
+                                <TextBlock Text="+" FontSize="16" FontWeight="Bold"/>
+                            </Button>
+                        </Grid>
+
+                        <!-- Projects List -->
+                        <ListBox Grid.Row="1"
+                                 Style="{StaticResource ChatListBox}"
+                                 ItemsSource="{Binding Projects}"
+                                 SelectedItem="{Binding SelectedProject}"
+                                 SelectionChanged="ProjectsListBox_SelectionChanged"
+                                 MaxHeight="150">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <Grid.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Header="Delete Project"
+                                                          Command="{Binding DataContext.DeleteProjectCommand, Source={x:Reference Name=MainWindowRef}}"
+                                                          CommandParameter="{Binding}"/>
+                                            </ContextMenu>
+                                        </Grid.ContextMenu>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="📁" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding Name}"
+                                                   Foreground="{StaticResource PrimaryTextBrush}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding Chats.Count, StringFormat='({0})'}"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   FontSize="11"
+                                                   Margin="8,0,0,0"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <!-- Clear Project Filter Button -->
+                        <Button Grid.Row="2"
+                                Style="{StaticResource SidebarButton}"
+                                Content="Show All Chats"
+                                Command="{Binding ClearProjectFilterCommand}"
+                                Visibility="{Binding SelectedProject, Converter={StaticResource BoolToVisibility}}"
+                                Margin="4,4,4,0"
+                                FontSize="11"/>
+                    </Grid>
                 </Expander>
 
                 <!-- Recent Chats -->
@@ -111,16 +182,24 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0"
-                               Text="Recent Chats"
-                               Foreground="{StaticResource SecondaryTextBrush}"
-                               FontSize="12"
-                               Margin="12,12,12,4"/>
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="12,12,12,4">
+                        <TextBlock Text="Recent Chats"
+                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                   FontSize="12"
+                                   Visibility="{Binding SelectedProject, Converter={StaticResource InverseBoolToVisibility}}"/>
+                        <TextBlock Foreground="{StaticResource SecondaryTextBrush}"
+                                   FontSize="12"
+                                   Visibility="{Binding SelectedProject, Converter={StaticResource BoolToVisibility}}">
+                            <Run Text="Chats in: "/>
+                            <Run Text="{Binding SelectedProject.Name}" FontWeight="SemiBold"/>
+                        </TextBlock>
+                    </StackPanel>
 
                     <ListBox Grid.Row="1"
                              Style="{StaticResource ChatListBox}"
                              ItemsSource="{Binding RecentChats}"
-                             SelectedItem="{Binding SelectedChatItem}">
+                             SelectedItem="{Binding SelectedChatItem}"
+                             SelectionChanged="RecentChatsListBox_SelectionChanged">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <Grid>
@@ -129,6 +208,13 @@
                                             <MenuItem Header="Rename"
                                                       Command="{Binding DataContext.StartRenameChatCommand, Source={x:Reference Name=MainWindowRef}}"
                                                       CommandParameter="{Binding}"/>
+                                            <MenuItem Header="Assign to Project"
+                                                      Command="{Binding DataContext.ShowAssignToProjectDialogCommand, Source={x:Reference Name=MainWindowRef}}"
+                                                      CommandParameter="{Binding}"/>
+                                            <MenuItem Header="Remove from Project"
+                                                      Command="{Binding DataContext.RemoveChatFromProjectCommand, Source={x:Reference Name=MainWindowRef}}"
+                                                      CommandParameter="{Binding}"/>
+                                            <Separator/>
                                             <MenuItem Header="Delete"
                                                       Command="{Binding DataContext.DeleteChatCommand, Source={x:Reference Name=MainWindowRef}}"
                                                       CommandParameter="{Binding}"/>
@@ -139,6 +225,7 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
@@ -176,7 +263,20 @@
                                                FontSize="11"
                                                Margin="8,0,0,0"/>
 
-                                    <TextBlock Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="2"
+                                    <!-- Project Badge -->
+                                    <Border Grid.Column="0" Grid.Row="1"
+                                            Background="{StaticResource AccentBrush}"
+                                            CornerRadius="3"
+                                            Padding="4,1"
+                                            HorizontalAlignment="Left"
+                                            Visibility="{Binding ProjectName, Converter={StaticResource BoolToVisibility}}"
+                                            Margin="0,4,0,0">
+                                        <TextBlock Text="{Binding ProjectName}"
+                                                   Foreground="White"
+                                                   FontSize="10"/>
+                                    </Border>
+
+                                    <TextBlock Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="2"
                                                Text="{Binding LastMessage}"
                                                Foreground="{StaticResource SecondaryTextBrush}"
                                                FontSize="12"
@@ -247,12 +347,35 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <Button Grid.Column="0"
-                            Style="{StaticResource IconButton}"
-                            Command="{Binding ToggleSidebarCommand}"
-                            ToolTip="Toggle sidebar">
-                        <TextBlock Text="☰" FontSize="18"/>
-                    </Button>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                        <Button Style="{StaticResource IconButton}"
+                                Command="{Binding ToggleSidebarCommand}"
+                                ToolTip="Toggle sidebar">
+                            <TextBlock Text="☰" FontSize="18"/>
+                        </Button>
+
+                        <!-- Current Chat Title -->
+                        <TextBlock Text="{Binding CurrentChat.Title}"
+                                   Foreground="{StaticResource PrimaryTextBrush}"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis"
+                                   MaxWidth="200"
+                                   Margin="12,0,0,0"
+                                   Visibility="{Binding CurrentChat, Converter={StaticResource BoolToVisibility}}"/>
+
+                        <!-- Current Project Badge -->
+                        <Border Background="{StaticResource AccentBrush}"
+                                CornerRadius="3"
+                                Padding="6,2"
+                                VerticalAlignment="Center"
+                                Margin="8,0,0,0"
+                                Visibility="{Binding CurrentChatHasProject, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="{Binding CurrentChat.Project.Name}"
+                                       Foreground="White"
+                                       FontSize="11"/>
+                        </Border>
+                    </StackPanel>
 
                     <StackPanel Grid.Column="1"
                                 Orientation="Horizontal"
@@ -267,6 +390,20 @@
                                   DisplayMemberPath="Name"
                                   SelectedValuePath="Name"
                                   Width="200"/>
+
+                        <!-- Project Context Sharing Toggle -->
+                        <Border Margin="16,0,0,0"
+                                Visibility="{Binding CurrentChatHasProject, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox IsChecked="{Binding UseProjectContext}"
+                                          VerticalAlignment="Center"/>
+                                <TextBlock Text="Share Project Context"
+                                           Foreground="{StaticResource SecondaryTextBrush}"
+                                           VerticalAlignment="Center"
+                                           Margin="4,0,0,0"
+                                           ToolTip="Include conversation history from other chats in this project"/>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
 
                     <Button Grid.Column="2"
@@ -566,6 +703,69 @@
                     </ItemsControl>
                 </ScrollViewer>
             </Grid>
+        </Border>
+
+        <!-- Assign to Project Dialog Overlay -->
+        <Border Grid.ColumnSpan="3"
+                Background="#80000000"
+                Visibility="{Binding IsAssignProjectDialogVisible, Converter={StaticResource BoolToVisibility}}">
+            <Border Background="{StaticResource SecondaryBackgroundBrush}"
+                    CornerRadius="8"
+                    Padding="24"
+                    Width="350"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Header -->
+                    <TextBlock Grid.Row="0"
+                               Text="Assign to Project"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource PrimaryTextBrush}"
+                               Margin="0,0,0,8"/>
+
+                    <TextBlock Grid.Row="1"
+                               Text="{Binding ChatToAssign.Title, StringFormat='Chat: {0}'}"
+                               Foreground="{StaticResource SecondaryTextBrush}"
+                               TextTrimming="CharacterEllipsis"
+                               Margin="0,0,0,16"/>
+
+                    <!-- Projects List -->
+                    <ListBox Grid.Row="2"
+                             Style="{StaticResource ChatListBox}"
+                             ItemsSource="{Binding Projects}"
+                             MaxHeight="250"
+                             Margin="0,0,0,16">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource SidebarButton}"
+                                        HorizontalContentAlignment="Left"
+                                        Command="{Binding DataContext.AssignChatToProjectCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="📁" Margin="0,0,8,0"/>
+                                        <TextBlock Text="{Binding Name}"/>
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <!-- Cancel Button -->
+                    <Button Grid.Row="3"
+                            Content="Cancel"
+                            Style="{StaticResource SidebarButton}"
+                            Command="{Binding CancelAssignProjectCommand}"
+                            HorizontalAlignment="Right"/>
+                </Grid>
+            </Border>
         </Border>
     </Grid>
 </Window>

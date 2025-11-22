@@ -35,6 +35,12 @@ public partial class ChatListItemViewModel : ObservableObject
     [ObservableProperty]
     private string _editingTitle = string.Empty;
 
+    [ObservableProperty]
+    private int? _projectId;
+
+    [ObservableProperty]
+    private string? _projectName;
+
     public ChatListItemViewModel() { }
 
     public ChatListItemViewModel(Chat chat)
@@ -44,6 +50,8 @@ public partial class ChatListItemViewModel : ObservableObject
         UpdatedAt = chat.UpdatedAt;
         IsPinned = chat.IsPinned;
         ModelName = chat.ModelName;
+        ProjectId = chat.ProjectId;
+        ProjectName = chat.Project?.Name;
 
         var lastMsg = chat.Messages?.LastOrDefault();
         if (lastMsg != null)

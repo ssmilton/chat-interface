@@ -68,11 +68,30 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private string _connectionStatus = "Disconnected";
 
+    [ObservableProperty]
+    private string _newProjectName = string.Empty;
+
+    [ObservableProperty]
+    private bool _useProjectContext;
+
+    [ObservableProperty]
+    private bool _isAssignProjectDialogVisible;
+
+    [ObservableProperty]
+    private ChatListItemViewModel? _chatToAssign;
+
+    public bool CurrentChatHasProject => CurrentChat?.ProjectId != null;
+
     public MainViewModel(IChatService chatService, IOllamaService ollamaService, FileService fileService)
     {
         _chatService = chatService;
         _ollamaService = ollamaService;
         _fileService = fileService;
+    }
+
+    partial void OnCurrentChatChanged(Chat? value)
+    {
+        OnPropertyChanged(nameof(CurrentChatHasProject));
     }
 
     public async Task InitializeAsync()
@@ -209,7 +228,7 @@ public partial class MainViewModel : ViewModelBase
             Messages.Add(assistantMessageVm);
 
             // Build request
-            var request = BuildChatRequest();
+            var request = await BuildChatRequestAsync();
             var userInput = MessageInput;
             MessageInput = string.Empty;
 
@@ -253,10 +272,14 @@ public partial class MainViewModel : ViewModelBase
             // Extract and save artifacts from the response
             await ExtractAndSaveArtifactsAsync(fullResponse.ToString(), savedMessage.Id);
 
+            // Refresh chat from database (title may have been auto-updated)
+            CurrentChat = await _chatService.GetChatByIdAsync(CurrentChat.Id);
+
             // Update chat item in sidebar
             var chatItem = RecentChats.FirstOrDefault(c => c.Id == CurrentChat.Id);
             if (chatItem != null)
             {
+                chatItem.Title = CurrentChat.Title;
                 chatItem.LastMessage = fullResponse.ToString().Length > 100
                     ? fullResponse.ToString()[..100] + "..."
                     : fullResponse.ToString();
@@ -332,6 +355,122 @@ public partial class MainViewModel : ViewModelBase
         {
             Projects.Add(projectVm);
         }
+    }
+
+    [RelayCommand]
+    private async Task CreateProjectFromInputAsync()
+    {
+        if (string.IsNullOrWhiteSpace(NewProjectName)) return;
+
+        var project = await _chatService.CreateProjectAsync(NewProjectName.Trim());
+        var projectVm = new ProjectViewModel(project);
+        Projects.Add(projectVm);
+        NewProjectName = string.Empty;
+    }
+
+    [RelayCommand]
+    private async Task SelectProjectAsync(ProjectViewModel? project)
+    {
+        // Deselect previous
+        if (SelectedProject != null)
+        {
+            SelectedProject.IsSelected = false;
+        }
+
+        SelectedProject = project;
+
+        if (project != null)
+        {
+            project.IsSelected = true;
+            // Filter chats by project
+            var chats = await _chatService.GetChatsAsync(project.Id);
+            RecentChats.Clear();
+            foreach (var chat in chats)
+            {
+                RecentChats.Add(new ChatListItemViewModel(chat));
+            }
+        }
+        else
+        {
+            // Show all recent chats
+            await LoadRecentChatsAsync();
+        }
+    }
+
+    [RelayCommand]
+    private async Task DeleteProjectAsync(ProjectViewModel? project)
+    {
+        if (project == null) return;
+
+        await _chatService.DeleteProjectAsync(project.Id);
+        Projects.Remove(project);
+
+        if (SelectedProject?.Id == project.Id)
+        {
+            SelectedProject = null;
+            await LoadRecentChatsAsync();
+        }
+    }
+
+    [RelayCommand]
+    private async Task ClearProjectFilterAsync()
+    {
+        if (SelectedProject != null)
+        {
+            SelectedProject.IsSelected = false;
+        }
+        SelectedProject = null;
+        await LoadRecentChatsAsync();
+    }
+
+    [RelayCommand]
+    private void ShowAssignToProjectDialog(ChatListItemViewModel? chatItem)
+    {
+        if (chatItem == null) return;
+        ChatToAssign = chatItem;
+        IsAssignProjectDialogVisible = true;
+    }
+
+    [RelayCommand]
+    private async Task AssignChatToProjectAsync(ProjectViewModel? project)
+    {
+        if (ChatToAssign == null || project == null) return;
+
+        await _chatService.MoveChatToProjectAsync(ChatToAssign.Id, project.Id);
+        ChatToAssign.ProjectId = project.Id;
+        ChatToAssign.ProjectName = project.Name;
+
+        // Refresh project chat counts
+        await LoadProjectsAsync();
+
+        IsAssignProjectDialogVisible = false;
+        ChatToAssign = null;
+    }
+
+    [RelayCommand]
+    private async Task RemoveChatFromProjectAsync(ChatListItemViewModel? chatItem)
+    {
+        if (chatItem == null) return;
+
+        await _chatService.MoveChatToProjectAsync(chatItem.Id, null);
+        chatItem.ProjectId = null;
+        chatItem.ProjectName = null;
+
+        // Refresh project chat counts
+        await LoadProjectsAsync();
+
+        // If filtering by a project, remove this chat from view
+        if (SelectedProject != null)
+        {
+            RecentChats.Remove(chatItem);
+        }
+    }
+
+    [RelayCommand]
+    private void CancelAssignProject()
+    {
+        IsAssignProjectDialogVisible = false;
+        ChatToAssign = null;
     }
 
     [RelayCommand]
@@ -470,7 +609,7 @@ public partial class MainViewModel : ViewModelBase
         }
     }
 
-    private OllamaChatRequest BuildChatRequest()
+    private async Task<OllamaChatRequest> BuildChatRequestAsync()
     {
         var messages = new List<OllamaChatMessage>();
 
@@ -482,6 +621,20 @@ public partial class MainViewModel : ViewModelBase
                 Role = "system",
                 Content = CurrentChat.SystemPrompt
             });
+        }
+
+        // Add project context if enabled and chat belongs to a project
+        if (UseProjectContext && CurrentChat?.ProjectId != null)
+        {
+            var projectContext = await GetProjectContextAsync(CurrentChat.ProjectId.Value, CurrentChat.Id);
+            if (!string.IsNullOrEmpty(projectContext))
+            {
+                messages.Add(new OllamaChatMessage
+                {
+                    Role = "system",
+                    Content = $"[Project Context - Previous conversations in this project:]\n{projectContext}"
+                });
+            }
         }
 
         // Add conversation history
@@ -514,6 +667,28 @@ public partial class MainViewModel : ViewModelBase
             Stream = _ollamaService.GetConfig().StreamResponses,
             Options = _ollamaService.GetConfig().DefaultOptions
         };
+    }
+
+    private async Task<string> GetProjectContextAsync(int projectId, int excludeChatId)
+    {
+        var projectChats = await _chatService.GetChatsAsync(projectId);
+        var contextBuilder = new System.Text.StringBuilder();
+
+        foreach (var chat in projectChats.Where(c => c.Id != excludeChatId).Take(5))
+        {
+            var fullChat = await _chatService.GetChatByIdAsync(chat.Id);
+            if (fullChat.Messages.Any())
+            {
+                contextBuilder.AppendLine($"--- Chat: {fullChat.Title} ---");
+                foreach (var msg in fullChat.Messages.TakeLast(10))
+                {
+                    contextBuilder.AppendLine($"{msg.Role}: {msg.Content}");
+                }
+                contextBuilder.AppendLine();
+            }
+        }
+
+        return contextBuilder.ToString();
     }
 
     private async Task ExtractAndSaveArtifactsAsync(string content, int messageId)
