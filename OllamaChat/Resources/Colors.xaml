@@ -21,8 +21,8 @@
     <!-- Accent Colors -->
     <Color x:Key="AccentColor">#10A37F</Color>
     <Color x:Key="AccentHoverColor">#0D8A6C</Color>
-    <Color x:Key="UserMessageColor">#343541</Color>
-    <Color x:Key="AssistantMessageColor">#444654</Color>
+    <Color x:Key="UserMessageColor">#808080</Color>
+    <Color x:Key="AssistantMessageColor">#E5E5E5</Color>
 
     <!-- Border Colors -->
     <Color x:Key="BorderColor">#3E3E42</Color>
