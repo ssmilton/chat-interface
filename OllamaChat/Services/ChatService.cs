@@ -85,6 +85,7 @@ public class ChatService : IChatService
     public async Task<List<Chat>> GetChatsAsync(int? projectId = null)
     {
         var query = _context.Chats
+            .Include(c => c.Project)
             .Include(c => c.Messages.OrderBy(m => m.CreatedAt).Take(1))
             .Where(c => !c.IsArchived);
 
@@ -102,6 +103,7 @@ public class ChatService : IChatService
     public async Task<List<Chat>> GetRecentChatsAsync(int count = 20)
     {
         return await _context.Chats
+            .Include(c => c.Project)
             .Where(c => !c.IsArchived)
             .OrderByDescending(c => c.UpdatedAt)
             .Take(count)
