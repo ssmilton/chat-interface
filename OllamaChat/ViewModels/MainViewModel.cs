@@ -351,6 +351,51 @@ public partial class MainViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void StartRenameChat(ChatListItemViewModel? chatItem)
+    {
+        if (chatItem == null) return;
+
+        // Cancel any other editing
+        foreach (var chat in RecentChats)
+        {
+            chat.IsEditing = false;
+        }
+
+        chatItem.EditingTitle = chatItem.Title;
+        chatItem.IsEditing = true;
+    }
+
+    [RelayCommand]
+    private async Task ConfirmRenameChatAsync(ChatListItemViewModel? chatItem)
+    {
+        if (chatItem == null || !chatItem.IsEditing) return;
+
+        var newTitle = chatItem.EditingTitle?.Trim();
+        if (!string.IsNullOrEmpty(newTitle) && newTitle != chatItem.Title)
+        {
+            var chat = await _chatService.GetChatByIdAsync(chatItem.Id);
+            chat.Title = newTitle;
+            await _chatService.UpdateChatAsync(chat);
+            chatItem.Title = newTitle;
+
+            // Update current chat if it's the same
+            if (CurrentChat?.Id == chatItem.Id)
+            {
+                CurrentChat.Title = newTitle;
+            }
+        }
+
+        chatItem.IsEditing = false;
+    }
+
+    [RelayCommand]
+    private void CancelRenameChat(ChatListItemViewModel? chatItem)
+    {
+        if (chatItem == null) return;
+        chatItem.IsEditing = false;
+    }
+
+    [RelayCommand]
     private async Task SearchChatsAsync()
     {
         if (string.IsNullOrWhiteSpace(SearchQuery))

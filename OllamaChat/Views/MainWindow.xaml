@@ -6,6 +6,7 @@
         xmlns:vm="clr-namespace:OllamaChat.ViewModels"
         xmlns:converters="clr-namespace:OllamaChat.Converters"
         mc:Ignorable="d"
+        x:Name="MainWindowRef"
         Title="Ollama Chat"
         Height="800" Width="1400"
         MinHeight="600" MinWidth="900"
@@ -123,6 +124,16 @@
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <Grid>
+                                    <Grid.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Rename"
+                                                      Command="{Binding DataContext.StartRenameChatCommand, Source={x:Reference Name=MainWindowRef}}"
+                                                      CommandParameter="{Binding}"/>
+                                            <MenuItem Header="Delete"
+                                                      Command="{Binding DataContext.DeleteChatCommand, Source={x:Reference Name=MainWindowRef}}"
+                                                      CommandParameter="{Binding}"/>
+                                        </ContextMenu>
+                                    </Grid.ContextMenu>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
@@ -132,11 +143,32 @@
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
 
+                                    <!-- Title display (when not editing) -->
                                     <TextBlock Grid.Column="0" Grid.Row="0"
                                                Text="{Binding Title}"
                                                Foreground="{StaticResource PrimaryTextBrush}"
                                                FontWeight="Medium"
-                                               TextTrimming="CharacterEllipsis"/>
+                                               TextTrimming="CharacterEllipsis"
+                                               Visibility="{Binding IsEditing, Converter={StaticResource InverseBoolToVisibility}}"/>
+
+                                    <!-- Title edit TextBox (when editing) -->
+                                    <TextBox Grid.Column="0" Grid.Row="0"
+                                             Text="{Binding EditingTitle, UpdateSourceTrigger=PropertyChanged}"
+                                             Foreground="{StaticResource PrimaryTextBrush}"
+                                             Background="{StaticResource HoverBackgroundBrush}"
+                                             BorderThickness="1"
+                                             BorderBrush="{StaticResource AccentBrush}"
+                                             Padding="2"
+                                             Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBox.InputBindings>
+                                            <KeyBinding Key="Return"
+                                                        Command="{Binding DataContext.ConfirmRenameChatCommand, Source={x:Reference Name=MainWindowRef}}"
+                                                        CommandParameter="{Binding}"/>
+                                            <KeyBinding Key="Escape"
+                                                        Command="{Binding DataContext.CancelRenameChatCommand, Source={x:Reference Name=MainWindowRef}}"
+                                                        CommandParameter="{Binding}"/>
+                                        </TextBox.InputBindings>
+                                    </TextBox>
 
                                     <TextBlock Grid.Column="1" Grid.Row="0"
                                                Text="{Binding FormattedDate}"

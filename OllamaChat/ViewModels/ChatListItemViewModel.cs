@@ -29,6 +29,12 @@ public partial class ChatListItemViewModel : ObservableObject
     [ObservableProperty]
     private string _modelName = string.Empty;
 
+    [ObservableProperty]
+    private bool _isEditing;
+
+    [ObservableProperty]
+    private string _editingTitle = string.Empty;
+
     public ChatListItemViewModel() { }
 
     public ChatListItemViewModel(Chat chat)
