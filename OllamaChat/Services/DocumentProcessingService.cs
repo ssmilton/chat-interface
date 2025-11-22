@@ -221,7 +221,7 @@ public class DocumentProcessingService : IDocumentProcessingService
     {
         var textBuilder = new StringBuilder();
 
-        foreach (var run in paragraph.Elements<Run>())
+        foreach (var run in paragraph.Elements<DocumentFormat.OpenXml.Wordprocessing.Run>())
         {
             foreach (var text in run.Elements<DocumentFormat.OpenXml.Wordprocessing.Text>())
             {
